@@ -1,5 +1,3 @@
-# Three-level named baseConfig chain mixing camelCase and kebab-case.
-# deep: level3 -> level2 -> level1 gives 3 attempts (level1) and 20ms wait (level2).
 resilience4j:
   retry:
     configs:

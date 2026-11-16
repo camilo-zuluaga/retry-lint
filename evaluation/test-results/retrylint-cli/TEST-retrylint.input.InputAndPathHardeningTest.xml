@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="retrylint.input.InputAndPathHardeningTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-16T11:55:53.208Z" hostname="redacted" time="0.032">
+  <properties/>
+  <testcase name="UTF-8 configuration filename resolves inside manifest directory()" classname="retrylint.input.InputAndPathHardeningTest" time="0.005"/>
+  <testcase name="absolute traversal missing and directory configuration paths fail()" classname="retrylint.input.InputAndPathHardeningTest" time="0.007"/>
+  <testcase name="service configuration size is bounded()" classname="retrylint.input.InputAndPathHardeningTest" time="0.006"/>
+  <testcase name="manifest file size is bounded before YAML parsing()" classname="retrylint.input.InputAndPathHardeningTest" time="0.003"/>
+  <testcase name="symbolic-link configuration is rejected when platform permits creating it()" classname="retrylint.input.InputAndPathHardeningTest" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

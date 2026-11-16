@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="retrylint.testbed.DownstreamClientTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-11-16T11:55:43.660Z" hostname="redacted" time="1.676">
+  <properties/>
+  <testcase name="named Retry policy performs three real HTTP attempts and propagates trace ID()" classname="retrylint.testbed.DownstreamClientTest" time="1.676"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

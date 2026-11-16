@@ -25,13 +25,13 @@ Both should report Java 21 for this project. A separate system Gradle installati
 .\gradlew.bat build
 ```
 
-Verify that post-freeze work did not change production analyzer code:
+Verify that post-freeze work did not change the analyzer core:
 
 ```powershell
-git diff v0.1.0 -- retrylint-cli/src/main
+git diff v0.1.0 -- retrylint-cli/src/main ':(exclude)retrylint-cli/src/main/kotlin/retrylint/cli'
 ```
 
-The last command should print nothing. The historical analyzer core and the final project delivery have separate identifiers: `v0.1.0` is the evaluated analyzer implementation, while `v0.1.1` is the final delivery tag. The packaged command therefore continues to report `RetryLint 0.1.0`.
+The last command should print nothing. The `cli` package is excluded because `validate` was corrected after the freeze to return exit code `3` on unexpected internal failures, as the contract requires; the analysis packages are unchanged. The historical analyzer core and the final project delivery have separate identifiers: `v0.1.0` is the evaluated analyzer implementation, while `v0.1.1` is the final delivery tag. The packaged command therefore continues to report `RetryLint 0.1.0`.
 
 ## Validate and analyze the complete example
 

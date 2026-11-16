@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="retrylint.rules.RetryAmplificationFixtureTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-16T11:55:53.285Z" hostname="redacted" time="0.014">
+  <properties/>
+  <testcase name="complete example resolves three by three by three to error at twenty seven()" classname="retrylint.rules.RetryAmplificationFixtureTest" time="0.005"/>
+  <testcase name="one by one by three stays below warning threshold()" classname="retrylint.rules.RetryAmplificationFixtureTest" time="0.004"/>
+  <testcase name="branching fixture deterministically chooses maximum path and warning boundary()" classname="retrylint.rules.RetryAmplificationFixtureTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

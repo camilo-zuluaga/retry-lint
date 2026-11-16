@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="retrylint.report.AnalysisReportRendererTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-16T11:55:53.247Z" hostname="redacted" time="0.031">
+  <properties/>
+  <testcase name="reports are checkout independent because configuration evidence paths are relative()" classname="retrylint.report.AnalysisReportRendererTest" time="0.012"/>
+  <testcase name="text and JSON expose the same completeness gaps()" classname="retrylint.report.AnalysisReportRendererTest" time="0.008"/>
+  <testcase name="text and JSON expose the same finding facts()" classname="retrylint.report.AnalysisReportRendererTest" time="0.009"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

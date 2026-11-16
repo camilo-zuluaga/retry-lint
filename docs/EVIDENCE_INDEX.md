@@ -18,7 +18,8 @@ This index maps important claims to the repository artifact that supports them a
 | The supported Resilience4j defaults and `maxAttempts` meaning match the pinned library | [`Resilience4jContractTest.kt`](../retrylint-cli/src/test/kotlin/retrylint/config/Resilience4jContractTest.kt) | `.\gradlew.bat :retrylint-cli:test --tests "retrylint.config.Resilience4jContractTest"` |
 | RL002 treats 800ms versus a 1300ms window as unsafe and equality as safe | [`TimeoutBudgetAnalyzerTest.kt`](../retrylint-cli/src/test/kotlin/retrylint/rules/TimeoutBudgetAnalyzerTest.kt) | `.\gradlew.bat :retrylint-cli:test --tests "retrylint.rules.TimeoutBudgetAnalyzerTest"` |
 | RL003 implements the attempts/idempotency decision table | [`UnsafeRetryAnalyzerTest.kt`](../retrylint-cli/src/test/kotlin/retrylint/rules/UnsafeRetryAnalyzerTest.kt) | `.\gradlew.bat :retrylint-cli:test --tests "retrylint.rules.UnsafeRetryAnalyzerTest"` |
-| Frozen v0.1.0 behavior, limits, exits, and non-goals | [Core contract](CORE_CONTRACT_V0.1.md) | `git diff v0.1.0 -- retrylint-cli/src/main` (expected: no output) |
+| Branch coverage of `config`, `graph`, and `rules` meets the 80% gate; all tests pass | [`evaluation/coverage/retrylint-cli`](../evaluation/coverage/retrylint-cli/html/index.html), [`evaluation/test-results`](../evaluation/test-results) | `.\gradlew.bat build :retrylint-cli:archiveCoverage` |
+| Frozen v0.1.0 behavior, limits, exits, and non-goals | [Core contract](CORE_CONTRACT_V0.1.md) | `git diff v0.1.0 -- retrylint-cli/src/main ':(exclude)retrylint-cli/src/main/kotlin/retrylint/cli'` (expected: no output; only the `cli` exit-code wiring changed after the freeze) |
 
 ## Figure sources
 

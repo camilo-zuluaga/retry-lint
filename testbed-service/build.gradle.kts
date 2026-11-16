@@ -20,7 +20,6 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(libs.spring.boot.starter.test)
     testRuntimeOnly(libs.junit.platform.launcher)
-    // The Spring contract test compares RetryLint's resolver with the real Resilience4j registry.
     testImplementation(project(":retrylint-cli"))
 }
 

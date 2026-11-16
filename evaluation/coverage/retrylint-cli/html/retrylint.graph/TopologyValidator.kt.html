@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TopologyValidator.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">retrylint-cli</a> &gt; <a href="index.source.html" class="el_package">retrylint.graph</a> &gt; <span class="el_source">TopologyValidator.kt</span></div><h1>TopologyValidator.kt</h1><pre class="source lang-java linenums">package retrylint.graph
+
+import retrylint.input.CallDeclaration
+import retrylint.input.TopologyManifest
+import retrylint.input.InputLimits
+import java.nio.file.InvalidPathException
+import java.nio.file.Path
+import java.util.ArrayDeque
+
+<span class="fc" id="L10">class TopologyValidator {</span>
+    fun validate(manifest: TopologyManifest): ValidatedTopology {
+<span class="fc" id="L12">        requireValidVersion(manifest)</span>
+<span class="fc" id="L13">        requireInputLimits(manifest)</span>
+<span class="fc" id="L14">        val services = uniqueById(&quot;service&quot;, manifest.services) { it.id }</span>
+<span class="fc" id="L15">        val operations = uniqueById(&quot;operation&quot;, manifest.operations) { it.id }</span>
+<span class="fc" id="L16">        val calls = uniqueById(&quot;call&quot;, manifest.calls) { it.id }</span>
+
+<span class="fc" id="L18">        manifest.services.forEach { service -&gt; requireRelativeConfigPath(service.id, service.config) }</span>
+<span class="fc" id="L19">        manifest.operations.forEach { operation -&gt;</span>
+<span class="fc bfc" id="L20" title="All 2 branches covered.">            if (operation.service !in services) {</span>
+<span class="nc" id="L21">                invalid(&quot;operation '${operation.id}' references unknown service '${operation.service}'&quot;)</span>
+            }
+<span class="fc" id="L23">        }</span>
+<span class="fc" id="L24">        manifest.calls.forEach { call -&gt;</span>
+<span class="pc bpc" id="L25" title="1 of 2 branches missed.">            if (call.from !in operations) {</span>
+<span class="nc" id="L26">                invalid(&quot;call '${call.id}' references unknown source operation '${call.from}'&quot;)</span>
+            }
+<span class="fc bfc" id="L28" title="All 2 branches covered.">            if (call.to !in operations) {</span>
+<span class="nc" id="L29">                invalid(&quot;call '${call.id}' references unknown target operation '${call.to}'&quot;)</span>
+            }
+<span class="fc" id="L31">        }</span>
+<span class="fc bfc" id="L32" title="All 2 branches covered.">        if (manifest.analysis.roots.isEmpty()) {</span>
+<span class="nc" id="L33">            invalid(&quot;at least one analysis root is required&quot;)</span>
+        }
+<span class="fc" id="L35">        manifest.analysis.roots.forEach { root -&gt;</span>
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">            if (root !in operations) invalid(&quot;analysis root '$root' references an unknown operation&quot;)</span>
+<span class="fc" id="L37">        }</span>
+
+<span class="fc" id="L39">        val outgoing = operations.keys.associateWith { mutableListOf&lt;CallDeclaration&gt;() }</span>
+<span class="fc" id="L40">        manifest.calls.forEach { call -&gt; outgoing.getValue(call.from).add(call) }</span>
+<span class="fc" id="L41">        val topologicalOrder = topologicalSort(operations.keys, manifest.calls, outgoing)</span>
+
+<span class="fc" id="L43">        return ValidatedTopology(</span>
+<span class="fc" id="L44">            servicesById = services,</span>
+<span class="fc" id="L45">            operationsById = operations,</span>
+<span class="fc" id="L46">            callsById = calls,</span>
+<span class="fc" id="L47">            outgoingCalls = outgoing.mapValues { it.value.toList() },</span>
+<span class="fc" id="L48">            topologicalOrder = topologicalOrder,</span>
+        )
+    }
+
+    private fun requireValidVersion(manifest: TopologyManifest) {
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if (manifest.version != 1) invalid(&quot;unsupported manifest version '${manifest.version}'; expected 1&quot;)</span>
+<span class="fc" id="L54">    }</span>
+
+    private fun requireInputLimits(manifest: TopologyManifest) {
+<span class="fc" id="L57">        requireMaximum(&quot;services&quot;, manifest.services.size, InputLimits.MAX_SERVICES)</span>
+<span class="fc" id="L58">        requireMaximum(&quot;operations&quot;, manifest.operations.size, InputLimits.MAX_OPERATIONS)</span>
+<span class="fc" id="L59">        requireMaximum(&quot;calls&quot;, manifest.calls.size, InputLimits.MAX_CALLS)</span>
+<span class="fc" id="L60">        requireMaximum(&quot;analysis roots&quot;, manifest.analysis.roots.size, InputLimits.MAX_ROOTS)</span>
+<span class="fc" id="L61">        requireLength(&quot;project name&quot;, manifest.name, InputLimits.MAX_PROJECT_NAME_LENGTH)</span>
+<span class="fc" id="L62">        manifest.services.forEach {</span>
+<span class="fc" id="L63">            requireLength(&quot;service ID&quot;, it.id, InputLimits.MAX_IDENTIFIER_LENGTH)</span>
+<span class="fc" id="L64">            requireLength(&quot;service configuration path&quot;, it.config, InputLimits.MAX_CONFIG_PATH_LENGTH)</span>
+<span class="fc" id="L65">        }</span>
+<span class="fc" id="L66">        manifest.operations.forEach {</span>
+<span class="fc" id="L67">            requireLength(&quot;operation ID&quot;, it.id, InputLimits.MAX_IDENTIFIER_LENGTH)</span>
+<span class="fc" id="L68">            requireLength(&quot;operation service reference&quot;, it.service, InputLimits.MAX_IDENTIFIER_LENGTH)</span>
+<span class="fc" id="L69">        }</span>
+<span class="fc" id="L70">        manifest.calls.forEach {</span>
+<span class="fc" id="L71">            requireLength(&quot;call ID&quot;, it.id, InputLimits.MAX_IDENTIFIER_LENGTH)</span>
+<span class="fc" id="L72">            requireLength(&quot;call source operation&quot;, it.from, InputLimits.MAX_IDENTIFIER_LENGTH)</span>
+<span class="fc" id="L73">            requireLength(&quot;call target operation&quot;, it.to, InputLimits.MAX_IDENTIFIER_LENGTH)</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">            it.retry?.let { name -&gt; requireLength(&quot;retry policy name&quot;, name, InputLimits.MAX_IDENTIFIER_LENGTH) }</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">            it.timeLimiter?.let { name -&gt;</span>
+<span class="fc" id="L76">                requireLength(&quot;time-limiter policy name&quot;, name, InputLimits.MAX_IDENTIFIER_LENGTH)</span>
+<span class="fc" id="L77">            }</span>
+<span class="fc" id="L78">        }</span>
+<span class="fc" id="L79">        manifest.analysis.roots.forEach { requireLength(&quot;analysis root&quot;, it, InputLimits.MAX_IDENTIFIER_LENGTH) }</span>
+<span class="fc" id="L80">    }</span>
+
+    private fun requireMaximum(label: String, actual: Int, maximum: Int) {
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">        if (actual &gt; maximum) invalid(&quot;$label count $actual exceeds limit $maximum&quot;)</span>
+<span class="fc" id="L84">    }</span>
+
+    private fun requireLength(label: String, value: String, maximum: Int) {
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">        if (value.length &gt; maximum) invalid(&quot;$label exceeds length limit $maximum&quot;)</span>
+<span class="fc" id="L88">    }</span>
+
+    private fun requireRelativeConfigPath(serviceId: String, config: String) {
+<span class="fc" id="L91">        val path = try {</span>
+<span class="fc" id="L92">            Path.of(config)</span>
+<span class="nc" id="L93">        } catch (_: InvalidPathException) {</span>
+<span class="nc" id="L94">            invalid(&quot;service '$serviceId' has an invalid configuration path '$config'&quot;)</span>
+        }
+<span class="pc bpc" id="L96" title="1 of 6 branches missed.">        if (config.isBlank() || path.isAbsolute || path.normalize().startsWith(&quot;..&quot;)) {</span>
+<span class="nc" id="L97">            invalid(&quot;service '$serviceId' configuration path must be relative to retrylint.yml: '$config'&quot;)</span>
+        }
+<span class="fc" id="L99">    }</span>
+
+    private fun topologicalSort(
+        operationIds: Set&lt;String&gt;,
+        calls: List&lt;CallDeclaration&gt;,
+        outgoing: Map&lt;String, List&lt;CallDeclaration&gt;&gt;,
+    ): List&lt;String&gt; {
+<span class="fc" id="L106">        val incomingCount = operationIds.associateWith { 0 }.toMutableMap()</span>
+<span class="fc" id="L107">        calls.forEach { call -&gt; incomingCount[call.to] = incomingCount.getValue(call.to) + 1 }</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">        val ready = ArrayDeque(operationIds.filter { incomingCount.getValue(it) == 0 })</span>
+<span class="fc" id="L109">        val order = mutableListOf&lt;String&gt;()</span>
+
+<span class="fc bfc" id="L111" title="All 4 branches covered.">        while (ready.isNotEmpty()) {</span>
+<span class="fc" id="L112">            val operation = ready.removeFirst()</span>
+<span class="fc" id="L113">            order += operation</span>
+<span class="fc" id="L114">            outgoing.getValue(operation).forEach { call -&gt;</span>
+<span class="fc" id="L115">                val remaining = incomingCount.getValue(call.to) - 1</span>
+<span class="fc" id="L116">                incomingCount[call.to] = remaining</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">                if (remaining == 0) ready.addLast(call.to)</span>
+<span class="fc" id="L118">            }</span>
+        }
+
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        if (order.size != operationIds.size) {</span>
+<span class="fc" id="L122">            val cycle = findCycle(operationIds, outgoing)</span>
+<span class="nc" id="L123">            invalid(&quot;synchronous call cycle detected: ${cycle.joinToString(&quot; -&gt; &quot;)}&quot;)</span>
+        }
+<span class="fc" id="L125">        return order</span>
+    }
+
+    private fun findCycle(
+        operationIds: Set&lt;String&gt;,
+        outgoing: Map&lt;String, List&lt;CallDeclaration&gt;&gt;,
+    ): List&lt;String&gt; {
+<span class="fc" id="L132">        val state = mutableMapOf&lt;String, Int&gt;()</span>
+<span class="fc" id="L133">        operationIds.forEach { start -&gt;</span>
+<span class="pc bpc" id="L134" title="2 of 4 branches missed.">            if ((state[start] ?: 0) != 0) return@forEach</span>
+<span class="fc" id="L135">            val stack = ArrayDeque&lt;CycleFrame&gt;()</span>
+<span class="fc" id="L136">            val path = mutableListOf&lt;String&gt;()</span>
+<span class="fc" id="L137">            state[start] = 1</span>
+<span class="fc" id="L138">            stack.addLast(CycleFrame(start))</span>
+<span class="fc" id="L139">            path += start</span>
+<span class="pc bpc" id="L140" title="2 of 4 branches missed.">            while (stack.isNotEmpty()) {</span>
+<span class="fc" id="L141">                val frame = stack.last()</span>
+<span class="fc" id="L142">                val edges = outgoing.getValue(frame.operation)</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">                if (frame.nextEdge &gt;= edges.size) {</span>
+<span class="nc" id="L144">                    state[frame.operation] = 2</span>
+<span class="nc" id="L145">                    stack.removeLast()</span>
+<span class="nc" id="L146">                    path.removeAt(path.lastIndex)</span>
+<span class="nc" id="L147">                    continue</span>
+                }
+<span class="fc" id="L149">                val target = edges[frame.nextEdge++].to</span>
+<span class="pc bpc" id="L150" title="1 of 5 branches missed.">                when (state[target] ?: 0) {</span>
+                    0 -&gt; {
+<span class="fc" id="L152">                        state[target] = 1</span>
+<span class="fc" id="L153">                        stack.addLast(CycleFrame(target))</span>
+<span class="fc" id="L154">                        path += target</span>
+                    }
+                    1 -&gt; {
+<span class="fc" id="L157">                        val cycleStart = path.indexOf(target)</span>
+<span class="pc" id="L158">                        return path.subList(cycleStart, path.size).toList() + target</span>
+                    }
+                }
+            }
+<span class="nc" id="L162">        }</span>
+<span class="nc" id="L163">        error(&quot;cycle expected but none found&quot;)</span>
+    }
+
+<span class="fc" id="L166">    private data class CycleFrame(val operation: String, var nextEdge: Int = 0)</span>
+
+    private fun &lt;T&gt; uniqueById(kind: String, values: List&lt;T&gt;, id: (T) -&gt; String): Map&lt;String, T&gt; {
+<span class="fc" id="L169">        val result = linkedMapOf&lt;String, T&gt;()</span>
+<span class="fc" id="L170">        values.forEach { value -&gt;</span>
+<span class="fc" id="L171">            val valueId = id(value)</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">            if (valueId.isBlank()) invalid(&quot;$kind ID must not be blank&quot;)</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">            if (result.putIfAbsent(valueId, value) != null) invalid(&quot;duplicate $kind ID '$valueId'&quot;)</span>
+<span class="fc" id="L174">        }</span>
+<span class="fc" id="L175">        return result</span>
+    }
+
+<span class="fc" id="L178">    private fun invalid(message: String): Nothing = throw TopologyValidationException(message)</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

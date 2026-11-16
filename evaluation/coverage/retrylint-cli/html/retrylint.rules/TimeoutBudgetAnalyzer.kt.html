@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TimeoutBudgetAnalyzer.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">retrylint-cli</a> &gt; <a href="index.source.html" class="el_package">retrylint.rules</a> &gt; <span class="el_source">TimeoutBudgetAnalyzer.kt</span></div><h1>TimeoutBudgetAnalyzer.kt</h1><pre class="source lang-java linenums">package retrylint.rules
+
+import retrylint.input.CallDeclaration
+import retrylint.input.Idempotency
+import retrylint.input.LoadedRetryLintProject
+import retrylint.model.CompletenessGap
+import retrylint.model.Finding
+import retrylint.model.Resolution
+import retrylint.model.RuleAnalysisResult
+import retrylint.model.Severity
+import java.time.Duration
+import retrylint.input.InputLimits
+
+<span class="fc" id="L14">class TimeoutBudgetAnalyzer(</span>
+<span class="fc" id="L15">    private val maximumAdjacentPairsPerOperation: Long = InputLimits.MAX_ADJACENT_PAIRS_PER_OPERATION,</span>
+<span class="fc" id="L16">    private val maximumTotalAdjacentPairs: Long = InputLimits.MAX_TOTAL_ADJACENT_PAIRS,</span>
+<span class="fc" id="L17">) {</span>
+    fun analyze(project: LoadedRetryLintProject): RuleAnalysisResult {
+<span class="fc" id="L19">        val incomingCalls = project.manifest.calls.groupBy { it.to }</span>
+<span class="fc" id="L20">        val findings = mutableListOf&lt;Finding&gt;()</span>
+<span class="fc" id="L21">        val gaps = mutableListOf&lt;CompletenessGap&gt;()</span>
+
+<span class="fc" id="L23">        var totalPairs = 0L</span>
+<span class="fc bfc" id="L24" title="All 2 branches covered.">        for (operation in project.topology.topologicalOrder) {</span>
+<span class="fc bfc" id="L25" title="All 2 branches covered.">            val incoming = incomingCalls[operation].orEmpty()</span>
+<span class="fc" id="L26">            val outgoing = project.topology.outgoingCalls.getValue(operation)</span>
+<span class="fc" id="L27">            val pairCount = incoming.size.toLong() * outgoing.size.toLong()</span>
+<span class="fc bfc" id="L28" title="All 2 branches covered.">            if (pairCount &gt; maximumAdjacentPairsPerOperation) {</span>
+<span class="fc" id="L29">                gaps += CompletenessGap(</span>
+<span class="fc" id="L30">                    ruleId = &quot;RL002&quot;,</span>
+<span class="fc" id="L31">                    operationId = operation,</span>
+<span class="fc" id="L32">                    callPath = emptyList(),</span>
+<span class="fc" id="L33">                    reason = &quot;skipped $pairCount adjacent call pairs; limit is $maximumAdjacentPairsPerOperation&quot;,</span>
+                )
+<span class="fc" id="L35">                continue</span>
+            }
+<span class="fc bfc" id="L37" title="All 2 branches covered.">            if (totalPairs + pairCount &gt; maximumTotalAdjacentPairs) {</span>
+<span class="fc" id="L38">                gaps += CompletenessGap(</span>
+<span class="fc" id="L39">                    ruleId = &quot;RL002&quot;,</span>
+<span class="fc" id="L40">                    operationId = operation,</span>
+<span class="fc" id="L41">                    callPath = emptyList(),</span>
+<span class="fc" id="L42">                    reason = &quot;stopped adjacent timeout checks at total-pair limit $maximumTotalAdjacentPairs&quot;,</span>
+                )
+<span class="fc" id="L44">                break</span>
+            }
+<span class="fc" id="L46">            totalPairs += pairCount</span>
+
+<span class="fc" id="L48">            incoming.forEach { incomingCall -&gt;</span>
+<span class="fc" id="L49">                outgoing.forEach { downstreamCall -&gt;</span>
+<span class="fc" id="L50">                    analyzePair(project, operation, incomingCall, downstreamCall, findings, gaps)</span>
+<span class="fc" id="L51">                }</span>
+<span class="fc" id="L52">            }</span>
+        }
+
+<span class="fc" id="L55">        return RuleAnalysisResult(findings = findings, completenessGaps = gaps)</span>
+    }
+
+    private fun analyzePair(
+        project: LoadedRetryLintProject,
+        middleOperation: String,
+        incomingCall: CallDeclaration,
+        downstreamCall: CallDeclaration,
+        findings: MutableList&lt;Finding&gt;,
+        gaps: MutableList&lt;CompletenessGap&gt;,
+    ) {
+<span class="fc" id="L66">        val incomingPolicies = project.configuration.calls.getValue(incomingCall.id)</span>
+<span class="fc" id="L67">        val downstreamPolicies = project.configuration.calls.getValue(downstreamCall.id)</span>
+<span class="fc" id="L68">        val reasons = mutableListOf&lt;String&gt;()</span>
+
+<span class="fc" id="L70">        val incomingTimeout = knownDuration(</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">            incomingPolicies.timeLimiter?.timeout,</span>
+<span class="fc" id="L72">            &quot;incoming call '${incomingCall.id}' has no time limiter&quot;,</span>
+<span class="fc" id="L73">            &quot;incoming timeout&quot;,</span>
+<span class="fc" id="L74">            reasons,</span>
+        )
+<span class="fc" id="L76">        val downstreamTimeout = knownDuration(</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">            downstreamPolicies.timeLimiter?.timeout,</span>
+<span class="fc" id="L78">            &quot;downstream call '${downstreamCall.id}' has no time limiter&quot;,</span>
+<span class="fc" id="L79">            &quot;downstream timeout&quot;,</span>
+<span class="fc" id="L80">            reasons,</span>
+        )
+<span class="fc" id="L82">        val fixedWait = knownDuration(</span>
+<span class="fc" id="L83">            downstreamPolicies.retry.fixedWait,</span>
+<span class="fc" id="L84">            &quot;downstream fixed wait is unknown&quot;,</span>
+<span class="fc" id="L85">            &quot;downstream fixed wait&quot;,</span>
+<span class="fc" id="L86">            reasons,</span>
+        )
+<span class="fc" id="L88">        requireSupportedAspectOrder(&quot;incoming&quot;, incomingPolicies.aspectOrder, reasons)</span>
+<span class="fc" id="L89">        requireSupportedAspectOrder(&quot;downstream&quot;, downstreamPolicies.aspectOrder, reasons)</span>
+
+<span class="fc bfc" id="L91" title="All 4 branches covered.">        if (reasons.isNotEmpty()) {</span>
+<span class="fc" id="L92">            gaps += CompletenessGap(</span>
+<span class="fc" id="L93">                ruleId = &quot;RL002&quot;,</span>
+<span class="fc" id="L94">                operationId = middleOperation,</span>
+<span class="fc" id="L95">                callPath = listOf(incomingCall.id, downstreamCall.id),</span>
+<span class="fc" id="L96">                reason = reasons.distinct().joinToString(&quot;; &quot;),</span>
+            )
+<span class="fc" id="L98">            return</span>
+        }
+
+<span class="fc" id="L101">        val retryWindow = try {</span>
+<span class="fc" id="L102">            RetryWindowCalculator.calculate(</span>
+<span class="fc" id="L103">                attempts = downstreamPolicies.retry.maxAttempts,</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">                timeoutPerAttempt = requireNotNull(downstreamTimeout),</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">                fixedWait = requireNotNull(fixedWait),</span>
+            )
+<span class="fc" id="L107">        } catch (exception: ArithmeticException) {</span>
+<span class="fc" id="L108">            gaps += CompletenessGap(</span>
+<span class="fc" id="L109">                ruleId = &quot;RL002&quot;,</span>
+<span class="fc" id="L110">                operationId = middleOperation,</span>
+<span class="fc" id="L111">                callPath = listOf(incomingCall.id, downstreamCall.id),</span>
+<span class="fc" id="L112">                reason = &quot;retry-window duration exceeds supported arithmetic range&quot;,</span>
+            )
+<span class="fc" id="L114">            return</span>
+        }
+
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">        val callerBudget = requireNotNull(incomingTimeout)</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if (callerBudget &gt;= retryWindow) return</span>
+
+<span class="fc" id="L120">        val target = project.topology.operationsById.getValue(downstreamCall.to)</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        val severity = if (target.idempotency == Idempotency.NON_IDEMPOTENT) {</span>
+<span class="fc" id="L122">            Severity.ERROR</span>
+        } else {
+<span class="fc" id="L124">            Severity.WARNING</span>
+        }
+<span class="fc" id="L126">        val overrun = retryWindow.minus(callerBudget)</span>
+<span class="fc" id="L127">        findings += Finding(</span>
+<span class="fc" id="L128">            ruleId = &quot;RL002&quot;,</span>
+<span class="fc" id="L129">            severity = severity,</span>
+<span class="fc" id="L130">            title = &quot;Timeout budget may be exceeded by ${formatDuration(overrun)}&quot;,</span>
+            message =
+<span class="fc" id="L132">                &quot;Incoming call '${incomingCall.id}' waits ${formatDuration(callerBudget)}, but &quot; +</span>
+<span class="fc" id="L133">                    &quot;'${downstreamCall.id}' permits a configured worst-case retry window of &quot; +</span>
+<span class="fc" id="L134">                    &quot;${formatDuration(retryWindow)}.&quot;,</span>
+<span class="fc" id="L135">            callPath = listOf(incomingCall.id, downstreamCall.id),</span>
+<span class="fc" id="L136">            evidence = linkedMapOf(</span>
+<span class="fc" id="L137">                &quot;middleOperation&quot; to middleOperation,</span>
+<span class="fc" id="L138">                &quot;targetOperation&quot; to downstreamCall.to,</span>
+<span class="fc" id="L139">                &quot;incomingTimeout&quot; to callerBudget,</span>
+<span class="fc" id="L140">                &quot;attempts&quot; to downstreamPolicies.retry.maxAttempts,</span>
+<span class="fc" id="L141">                &quot;timeoutPerAttempt&quot; to downstreamTimeout,</span>
+<span class="fc" id="L142">                &quot;fixedWait&quot; to fixedWait,</span>
+<span class="fc" id="L143">                &quot;retryWindow&quot; to retryWindow,</span>
+<span class="fc" id="L144">                &quot;overrun&quot; to overrun,</span>
+<span class="fc" id="L145">                &quot;incomingConfigurationFile&quot; to incomingPolicies.configurationSource.toString(),</span>
+<span class="fc" id="L146">                &quot;downstreamConfigurationFile&quot; to downstreamPolicies.configurationSource.toString(),</span>
+            ),
+        )
+<span class="fc" id="L149">    }</span>
+
+    private fun knownDuration(
+        resolution: Resolution&lt;Duration&gt;?,
+        missingReason: String,
+        label: String,
+        reasons: MutableList&lt;String&gt;,
+<span class="fc" id="L156">    ): Duration? = when (resolution) {</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">        null -&gt; {</span>
+<span class="fc" id="L158">            reasons += missingReason</span>
+<span class="fc" id="L159">            null</span>
+        }
+<span class="fc bfc" id="L161" title="All 2 branches covered.">        is Resolution.Known -&gt; resolution.value</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        is Resolution.Unknown -&gt; {</span>
+<span class="fc" id="L163">            reasons += &quot;$label unknown: ${resolution.reason}&quot;</span>
+<span class="fc" id="L164">            null</span>
+        }
+<span class="fc" id="L166">        is Resolution.Unsupported -&gt; {</span>
+<span class="fc" id="L167">            reasons += &quot;$label unsupported: ${resolution.reason}&quot;</span>
+<span class="fc" id="L168">            null</span>
+        }
+<span class="fc" id="L170">    }</span>
+
+    private fun requireSupportedAspectOrder(
+        label: String,
+        resolution: Resolution&lt;*&gt;,
+        reasons: MutableList&lt;String&gt;,
+    ) {
+<span class="fc" id="L177">        when (resolution) {</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">            is Resolution.Known -&gt; Unit</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">            is Resolution.Unknown -&gt; reasons += &quot;$label aspect order unknown: ${resolution.reason}&quot;</span>
+<span class="fc" id="L180">            is Resolution.Unsupported -&gt; reasons += &quot;$label aspect order unsupported: ${resolution.reason}&quot;</span>
+        }
+<span class="fc" id="L182">    }</span>
+
+    private fun formatDuration(duration: Duration): String {
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">        if (duration.nano % 1_000_000 != 0) return duration.toString()</span>
+<span class="fc" id="L186">        return try {</span>
+<span class="fc" id="L187">            &quot;${duration.toMillis()} ms&quot;</span>
+<span class="fc" id="L188">        } catch (_: ArithmeticException) {</span>
+<span class="fc" id="L189">            duration.toString()</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

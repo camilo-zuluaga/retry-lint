@@ -1,4 +1,3 @@
-# Contract scenario: kebab-case spellings of every supported field.
 resilience4j:
   retry:
     configs:

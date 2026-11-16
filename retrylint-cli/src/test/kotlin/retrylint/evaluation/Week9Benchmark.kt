@@ -19,6 +19,8 @@ import java.nio.file.StandardCopyOption
 import kotlin.io.path.createDirectories
 import kotlin.io.path.isDirectory
 
+private const val FROZEN_CORE_EXCLUSION = ":(exclude)retrylint-cli/src/main/kotlin/retrylint/cli"
+
 data class BenchmarkIndex(
     val schemaVersion: Int,
     val retryLintVersion: String,
@@ -378,7 +380,7 @@ class Week9BenchmarkRunner(
     }
 
     private fun verifyFrozenCore(repo: Path) {
-        val diff = ProcessBuilder("git", "diff", "--quiet", "v0.1.0", "--", "retrylint-cli/src/main")
+        val diff = ProcessBuilder("git", "diff", "--quiet", "v0.1.0", "--", "retrylint-cli/src/main", FROZEN_CORE_EXCLUSION)
             .directory(repo.toFile()).start()
         require(diff.waitFor() == 0) { "frozen analyzer core differs from v0.1.0; benchmark aborted" }
         val untracked = ProcessBuilder(

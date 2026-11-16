@@ -27,11 +27,10 @@ try {
     if ($LASTEXITCODE -ne 0 -or $tagCommit -ne "85ffebc096eb1b7d007270638ccffcecb62605b3") {
         throw "Tag v0.1.0 does not resolve to the frozen analyzer commit."
     }
-    # The analyzer semantics are frozen: production sources must be identical to v0.1.0,
-    # including uncommitted working-tree changes. Build/test infrastructure may evolve.
-    & git diff --quiet v0.1.0 -- retrylint-cli/src/main
+    # Only the cli package (exit-code wiring) may differ from v0.1.0; analysis sources are frozen.
+    & git diff --quiet v0.1.0 -- retrylint-cli/src/main ":(exclude)retrylint-cli/src/main/kotlin/retrylint/cli"
     if ($LASTEXITCODE -ne 0) {
-        throw "retrylint-cli/src/main differs from v0.1.0; refusing an untraceable experiment."
+        throw "The analyzer core in retrylint-cli/src/main differs from v0.1.0; refusing an untraceable experiment."
     }
     $headCommit = (& git rev-parse HEAD).Trim()
 

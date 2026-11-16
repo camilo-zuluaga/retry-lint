@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="retrylint.cli.ValidateCommandTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-16T11:55:52.572Z" hostname="redacted" time="0.049">
+  <properties/>
+  <testcase name="invalid fixtures exit with input error and clear diagnostics()" classname="retrylint.cli.ValidateCommandTest" time="0.03"/>
+  <testcase name="complete example exits successfully()" classname="retrylint.cli.ValidateCommandTest" time="0.013"/>
+  <testcase name="unexpected failures return code three()" classname="retrylint.cli.ValidateCommandTest" time="0.001"/>
+  <testcase name="unreadable manifest exits with input error()" classname="retrylint.cli.ValidateCommandTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

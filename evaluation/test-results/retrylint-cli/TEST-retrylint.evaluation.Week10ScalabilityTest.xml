@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="retrylint.evaluation.Week10ScalabilityTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-11-16T11:55:52.693Z" hostname="redacted" time="0.136">
+  <properties/>
+  <testcase name="statistics calculate odd median and retain input order()" classname="retrylint.evaluation.Week10ScalabilityTest" time="0.001"/>
+  <testcase name="generated project is valid RetryLint input with controlled semantics()" classname="retrylint.evaluation.Week10ScalabilityTest" time="0.039"/>
+  <testcase name="correctness verification rejects wrong expected count()" classname="retrylint.evaluation.Week10ScalabilityTest" time="0.008"/>
+  <testcase name="requested case order and fixed seeds are deterministic()" classname="retrylint.evaluation.Week10ScalabilityTest" time="0.0"/>
+  <testcase name="all generated edges are forward so graph is acyclic()" classname="retrylint.evaluation.Week10ScalabilityTest" time="0.007"/>
+  <testcase name="different seed changes seeded edges without changing counts()" classname="retrylint.evaluation.Week10ScalabilityTest" time="0.004"/>
+  <testcase name="same size and seed produce byte-identical YAML()" classname="retrylint.evaluation.Week10ScalabilityTest" time="0.004"/>
+  <testcase name="generator creates exact sparse graph counts at every planned size()" classname="retrylint.evaluation.Week10ScalabilityTest" time="0.017"/>
+  <testcase name="scalability result serialization retains raw timings and case order()" classname="retrylint.evaluation.Week10ScalabilityTest" time="0.049"/>
+  <testcase name="statistics calculate even median mean nearest-rank p95 and extrema()" classname="retrylint.evaluation.Week10ScalabilityTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

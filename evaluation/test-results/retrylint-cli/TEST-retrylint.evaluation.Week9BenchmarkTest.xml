@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="retrylint.evaluation.Week9BenchmarkTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-11-16T11:55:52.829Z" hostname="redacted" time="0.084">
+  <properties/>
+  <testcase name="gap matching distinguishes partial analysis from a finding()" classname="retrylint.evaluation.Week9BenchmarkTest" time="0.001"/>
+  <testcase name="finding key matching is rule severity path and target aware()" classname="retrylint.evaluation.Week9BenchmarkTest" time="0.001"/>
+  <testcase name="metric arithmetic and zero denominators are explicit()" classname="retrylint.evaluation.Week9BenchmarkTest" time="0.001"/>
+  <testcase name="invalid and partial statuses remain outside finding classification()" classname="retrylint.evaluation.Week9BenchmarkTest" time="0.0"/>
+  <testcase name="loader rejects duplicate IDs before execution()" classname="retrylint.evaluation.Week9BenchmarkTest" time="0.024"/>
+  <testcase name="loader preserves explicit index ordering()" classname="retrylint.evaluation.Week9BenchmarkTest" time="0.028"/>
+  <testcase name="loader rejects a missing indexed case directory()" classname="retrylint.evaluation.Week9BenchmarkTest" time="0.013"/>
+  <testcase name="loader rejects missing truth file()" classname="retrylint.evaluation.Week9BenchmarkTest" time="0.006"/>
+  <testcase name="loader rejects unreviewed truth()" classname="retrylint.evaluation.Week9BenchmarkTest" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

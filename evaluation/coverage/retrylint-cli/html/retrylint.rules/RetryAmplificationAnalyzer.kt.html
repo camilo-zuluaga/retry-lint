@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RetryAmplificationAnalyzer.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">retrylint-cli</a> &gt; <a href="index.source.html" class="el_package">retrylint.rules</a> &gt; <span class="el_source">RetryAmplificationAnalyzer.kt</span></div><h1>RetryAmplificationAnalyzer.kt</h1><pre class="source lang-java linenums">package retrylint.rules
+
+import retrylint.input.LoadedRetryLintProject
+import retrylint.model.Finding
+import retrylint.model.Severity
+import java.math.BigInteger
+import java.nio.file.Path
+
+<span class="fc" id="L9">data class AmplificationEdge(</span>
+<span class="fc" id="L10">    val callId: String,</span>
+<span class="pc" id="L11">    val from: String,</span>
+<span class="fc" id="L12">    val to: String,</span>
+<span class="fc" id="L13">    val attempts: Int,</span>
+<span class="fc" id="L14">    val configurationSource: Path,</span>
+)
+
+<span class="fc" id="L17">data class AmplificationPath(</span>
+<span class="fc" id="L18">    val rootOperation: String,</span>
+<span class="fc" id="L19">    val targetOperation: String,</span>
+<span class="fc" id="L20">    val operations: List&lt;String&gt;,</span>
+<span class="fc" id="L21">    val edges: List&lt;AmplificationEdge&gt;,</span>
+<span class="fc" id="L22">    val multiplier: BigInteger,</span>
+) {
+<span class="fc" id="L24">    val expression: String =</span>
+<span class="fc bfc" id="L25" title="All 2 branches covered.">        if (edges.isEmpty()) &quot;1 = 1&quot; else edges.joinToString(&quot; x &quot;) { it.attempts.toString() } + &quot; = $multiplier&quot;</span>
+}
+
+<span class="fc" id="L28">data class RetryAmplificationResult(</span>
+<span class="fc" id="L29">    val maximumPath: AmplificationPath,</span>
+<span class="fc" id="L30">    val finding: Finding?,</span>
+)
+
+/**
+ * Computes the greatest amplification reachable from the declared roots.
+ * Equal candidates retain the path encountered first in manifest-derived
+ * topological and outgoing-call order.
+ */
+<span class="fc" id="L38">class RetryAmplificationAnalyzer {</span>
+    fun analyze(project: LoadedRetryLintProject): RetryAmplificationResult {
+<span class="fc" id="L40">        val best = linkedMapOf&lt;String, BestPath&gt;()</span>
+<span class="fc" id="L41">        project.manifest.analysis.roots.forEach { root -&gt;</span>
+<span class="fc" id="L42">            best.putIfAbsent(root, BestPath(BigInteger.ONE, root, null))</span>
+<span class="fc" id="L43">        }</span>
+
+<span class="fc" id="L45">        project.topology.topologicalOrder.forEach { operation -&gt;</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">            val sourcePath = best[operation] ?: return@forEach</span>
+<span class="fc" id="L47">            project.topology.outgoingCalls.getValue(operation).forEach { call -&gt;</span>
+<span class="fc" id="L48">                val attempts = project.configuration.calls.getValue(call.id).retry.maxAttempts</span>
+<span class="fc" id="L49">                val candidate = sourcePath.multiplier * attempts.toBigInteger()</span>
+<span class="fc" id="L50">                val current = best[call.to]</span>
+<span class="fc bfc" id="L51" title="All 4 branches covered.">                if (current == null || candidate &gt; current.multiplier) {</span>
+<span class="fc" id="L52">                    best[call.to] = BestPath(candidate, sourcePath.rootOperation, call.id)</span>
+                }
+<span class="fc" id="L54">            }</span>
+<span class="fc" id="L55">        }</span>
+
+<span class="fc" id="L57">        var target: String? = null</span>
+<span class="fc" id="L58">        project.topology.topologicalOrder.forEach { operation -&gt;</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">            val candidate = best[operation] ?: return@forEach</span>
+<span class="fc" id="L60">            val currentTarget = target</span>
+<span class="fc bfc" id="L61" title="All 4 branches covered.">            if (currentTarget == null || candidate.multiplier &gt; best.getValue(currentTarget).multiplier) {</span>
+<span class="fc" id="L62">                target = operation</span>
+            }
+<span class="fc" id="L64">        }</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">        val maximumTarget = target ?: error(&quot;validated topology has no reachable analysis root&quot;)</span>
+<span class="fc" id="L66">        val path = reconstructPath(project, maximumTarget, best)</span>
+<span class="fc" id="L67">        return RetryAmplificationResult(path, createFinding(project, path))</span>
+    }
+
+    private fun reconstructPath(
+        project: LoadedRetryLintProject,
+        target: String,
+        best: Map&lt;String, BestPath&gt;,
+    ): AmplificationPath {
+<span class="fc" id="L75">        val reversedEdges = mutableListOf&lt;AmplificationEdge&gt;()</span>
+<span class="fc" id="L76">        var operation = target</span>
+<span class="fc" id="L77">        while (true) {</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">            val predecessorCallId = best.getValue(operation).predecessorCallId ?: break</span>
+<span class="fc" id="L79">            val call = project.topology.callsById.getValue(predecessorCallId)</span>
+<span class="fc" id="L80">            val policies = project.configuration.calls.getValue(predecessorCallId)</span>
+<span class="fc" id="L81">            reversedEdges += AmplificationEdge(</span>
+<span class="fc" id="L82">                callId = call.id,</span>
+<span class="fc" id="L83">                from = call.from,</span>
+<span class="fc" id="L84">                to = call.to,</span>
+<span class="fc" id="L85">                attempts = policies.retry.maxAttempts,</span>
+<span class="fc" id="L86">                configurationSource = policies.configurationSource,</span>
+            )
+<span class="fc" id="L88">            operation = call.from</span>
+        }
+<span class="fc" id="L90">        val edges = reversedEdges.asReversed()</span>
+<span class="fc" id="L91">        val operations = buildList {</span>
+<span class="fc" id="L92">            add(best.getValue(target).rootOperation)</span>
+<span class="fc" id="L93">            edges.forEach { add(it.to) }</span>
+<span class="fc" id="L94">        }</span>
+<span class="fc" id="L95">        return AmplificationPath(</span>
+<span class="fc" id="L96">            rootOperation = best.getValue(target).rootOperation,</span>
+<span class="fc" id="L97">            targetOperation = target,</span>
+<span class="fc" id="L98">            operations = operations,</span>
+<span class="fc" id="L99">            edges = edges,</span>
+<span class="fc" id="L100">            multiplier = best.getValue(target).multiplier,</span>
+        )
+    }
+
+    private fun createFinding(
+        project: LoadedRetryLintProject,
+        path: AmplificationPath,
+    ): Finding? {
+<span class="fc" id="L108">        val warningThreshold = project.manifest.analysis.amplificationWarning.toBigInteger()</span>
+<span class="fc" id="L109">        val errorThreshold = project.manifest.analysis.amplificationError.toBigInteger()</span>
+<span class="fc" id="L110">        val severity = when {</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">            path.multiplier &gt;= errorThreshold -&gt; Severity.ERROR</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">            path.multiplier &gt;= warningThreshold -&gt; Severity.WARNING</span>
+<span class="fc" id="L113">            else -&gt; return null</span>
+        }
+<span class="fc" id="L115">        val consecutiveRetryLayers = maximumConsecutiveRetryLayers(path.edges)</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">        val ownershipSummary = if (consecutiveRetryLayers &gt;= 2) {</span>
+<span class="fc" id="L117">            &quot; ${layerCount(consecutiveRetryLayers)} layers independently own retries on this path.&quot;</span>
+        } else {
+<span class="fc" id="L119">            &quot;&quot;</span>
+        }
+<span class="fc" id="L121">        val evidence = linkedMapOf&lt;String, Any&gt;(</span>
+<span class="fc" id="L122">            &quot;rootOperation&quot; to path.rootOperation,</span>
+<span class="fc" id="L123">            &quot;targetOperation&quot; to path.targetOperation,</span>
+<span class="fc" id="L124">            &quot;operationPath&quot; to path.operations,</span>
+<span class="fc" id="L125">            &quot;attempts&quot; to path.edges.map { it.attempts },</span>
+<span class="fc" id="L126">            &quot;expression&quot; to path.expression,</span>
+<span class="fc" id="L127">            &quot;multiplier&quot; to path.multiplier,</span>
+<span class="fc" id="L128">            &quot;configurationFiles&quot; to path.edges.map { it.configurationSource.toString() },</span>
+        )
+<span class="fc" id="L130">        return Finding(</span>
+<span class="fc" id="L131">            ruleId = &quot;RL001&quot;,</span>
+<span class="fc" id="L132">            severity = severity,</span>
+<span class="fc" id="L133">            title = &quot;Retry amplification of ${path.multiplier}x&quot;,</span>
+<span class="fc" id="L134">            message = &quot;${path.operations.joinToString(&quot; -&gt; &quot;)}: ${path.expression}.$ownershipSummary&quot;,</span>
+<span class="fc" id="L135">            callPath = path.edges.map { it.callId },</span>
+<span class="fc" id="L136">            evidence = evidence,</span>
+        )
+    }
+
+    private fun maximumConsecutiveRetryLayers(edges: List&lt;AmplificationEdge&gt;): Int {
+<span class="fc" id="L141">        var maximum = 0</span>
+<span class="fc" id="L142">        var current = 0</span>
+<span class="fc" id="L143">        edges.forEach { edge -&gt;</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">            current = if (edge.attempts &gt; 1) current + 1 else 0</span>
+<span class="fc" id="L145">            maximum = maxOf(maximum, current)</span>
+<span class="fc" id="L146">        }</span>
+<span class="fc" id="L147">        return maximum</span>
+    }
+
+<span class="pc bpc" id="L150" title="1 of 3 branches missed.">    private fun layerCount(count: Int): String = when (count) {</span>
+<span class="fc" id="L151">        2 -&gt; &quot;Two&quot;</span>
+<span class="fc" id="L152">        3 -&gt; &quot;Three&quot;</span>
+<span class="nc" id="L153">        else -&gt; count.toString()</span>
+<span class="fc" id="L154">    }</span>
+
+<span class="fc" id="L156">    private data class BestPath(</span>
+<span class="fc" id="L157">        val multiplier: BigInteger,</span>
+<span class="fc" id="L158">        val rootOperation: String,</span>
+<span class="fc" id="L159">        val predecessorCallId: String?,</span>
+    )
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

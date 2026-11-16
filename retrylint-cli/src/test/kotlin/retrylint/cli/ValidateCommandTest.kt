@@ -33,6 +33,31 @@ class ValidateCommandTest {
         }
     }
 
+    @Test
+    fun `unexpected failures return code three`() {
+        val error = StringWriter()
+        val commandLine = CommandLine(ValidateCommand { error("unexpected test failure") })
+            .setOut(PrintWriter(StringWriter(), true))
+            .setErr(PrintWriter(error, true))
+
+        val exitCode = commandLine.execute("retrylint.yml")
+
+        assertEquals(3, exitCode)
+        assertContains(error.toString(), "INTERNAL_ERROR")
+    }
+
+    @Test
+    fun `unreadable manifest exits with input error`() {
+        val error = StringWriter()
+        val commandLine = CommandLine(RetryLintCommand())
+            .setOut(PrintWriter(StringWriter(), true))
+            .setErr(PrintWriter(error, true))
+
+        val exitCode = commandLine.execute("validate", "does-not-exist/retrylint.yml")
+
+        assertEquals(2, exitCode)
+    }
+
     private fun executeFixture(name: String): CommandResult {
         val output = StringWriter()
         val error = StringWriter()

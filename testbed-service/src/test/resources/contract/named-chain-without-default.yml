@@ -1,4 +1,3 @@
-# Contract scenario: named base chains when no configs.default exists (library defaults apply).
 resilience4j:
   retry:
     configs:

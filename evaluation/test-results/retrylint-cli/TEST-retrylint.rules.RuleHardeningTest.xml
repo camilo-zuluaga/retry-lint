@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="retrylint.rules.RuleHardeningTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-16T11:55:53.304Z" hostname="redacted" time="0.049">
+  <properties/>
+  <testcase name="RL003 full fixture wording and evidence remain conservative()" classname="retrylint.rules.RuleHardeningTest" time="0.004"/>
+  <testcase name="per-operation and total adjacent pair guards are explicit()" classname="retrylint.rules.RuleHardeningTest" time="0.006"/>
+  <testcase name="large valid whole-millisecond duration does not overflow finding formatting()" classname="retrylint.rules.RuleHardeningTest" time="0.005"/>
+  <testcase name="RL001 fixture boundaries and unreachable nodes remain correct()" classname="retrylint.rules.RuleHardeningTest" time="0.014"/>
+  <testcase name="RL002 greater equality one-attempt and zero wait boundaries are safe()" classname="retrylint.rules.RuleHardeningTest" time="0.013"/>
+  <testcase name="unknown unsupported and overflowing durations become local completeness gaps()" classname="retrylint.rules.RuleHardeningTest" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

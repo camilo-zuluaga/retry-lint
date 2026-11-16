@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="retrylint.testbed.FrozenConfigurationSmokeTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-11-16T11:55:45.342Z" hostname="redacted" time="1.655">
+  <properties/>
+  <testcase name="Spring runtime loads the frozen checkout policy analyzed by RetryLint()" classname="retrylint.testbed.FrozenConfigurationSmokeTest" time="1.655"/>
+  <system-out><![CDATA[
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.0)
+
+2026-11-16T06:55:45.607-05:00  INFO 16794 --- [checkout] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : Starting GradleWorkerMain using Java 21.0.7 with PID 16794 (started by USER in REPO_ROOT/testbed-service)
+2026-11-16T06:55:45.608-05:00  INFO 16794 --- [checkout] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : No active profile set, falling back to 1 default profile: "default"
+2026-11-16T06:55:46.993-05:00  INFO 16794 --- [checkout] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : Started GradleWorkerMain in 1.622 seconds (process running for 3.875)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

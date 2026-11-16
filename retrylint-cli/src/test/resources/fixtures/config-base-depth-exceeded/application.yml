@@ -1,4 +1,3 @@
-# Nine named configs chained c1 -> c2 -> ... -> c9 exceed the supported depth of 8.
 resilience4j:
   retry:
     configs:

@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ServiceConfigurationResolver.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">retrylint-cli</a> &gt; <a href="index.source.html" class="el_package">retrylint.config</a> &gt; <span class="el_source">ServiceConfigurationResolver.kt</span></div><h1>ServiceConfigurationResolver.kt</h1><pre class="source lang-java linenums">package retrylint.config
+
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import retrylint.model.AspectOrder
+import retrylint.model.Resolution
+import retrylint.model.ResolvedRetry
+import retrylint.model.ResolvedServiceConfiguration
+import retrylint.model.ResolvedTimeLimiter
+import retrylint.input.InputLimits
+import java.nio.file.Files
+import java.nio.file.Path
+import java.time.Duration
+import kotlin.io.path.inputStream
+
+<span class="fc" id="L17">class ServiceConfigurationResolver {</span>
+<span class="fc" id="L18">    private val mapper = ObjectMapper(YAMLFactory())</span>
+
+    fun resolve(serviceId: String, path: Path): ResolvedServiceConfiguration {
+<span class="pc bpc" id="L21" title="1 of 2 branches missed.">        if (!Files.isRegularFile(path)) {</span>
+<span class="nc" id="L22">            throw ConfigurationException(&quot;configuration for service '$serviceId' is not a regular file: '$path'&quot;)</span>
+        }
+<span class="fc bfc" id="L24" title="All 2 branches covered.">        if (Files.size(path) &gt; InputLimits.MAX_SERVICE_CONFIG_BYTES) {</span>
+<span class="fc" id="L25">            throw ConfigurationException(</span>
+<span class="fc" id="L26">                &quot;configuration for service '$serviceId' exceeds ${InputLimits.MAX_SERVICE_CONFIG_BYTES} byte limit: '$path'&quot;,</span>
+            )
+        }
+<span class="fc" id="L29">        val root = try {</span>
+<span class="pc" id="L30">            path.inputStream().use(mapper::readTree)</span>
+<span class="nc" id="L31">        } catch (exception: Exception) {</span>
+<span class="nc" id="L32">            throw ConfigurationException(</span>
+<span class="nc" id="L33">                &quot;cannot read configuration for service '$serviceId' at '$path': ${exception.message}&quot;,</span>
+<span class="nc" id="L34">                exception,</span>
+            )
+        }
+<span class="fc" id="L37">        val resilience4j = objectField(root, &quot;resilience4j&quot;, &quot;configuration root&quot;, required = false)</span>
+<span class="fc" id="L38">        val retry = objectField(resilience4j, &quot;retry&quot;, &quot;resilience4j&quot;, required = false)</span>
+<span class="fc" id="L39">        val timeLimiter = objectField(resilience4j, &quot;timelimiter&quot;, &quot;resilience4j&quot;, required = false)</span>
+
+<span class="fc" id="L41">        val customOrders = mutableListOf&lt;String&gt;()</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        if (supportedField(retry, &quot;retryAspectOrder&quot;, &quot;retry-aspect-order&quot;, &quot;resilience4j.retry&quot;) != null) {</span>
+<span class="fc" id="L43">            customOrders += &quot;retry aspect order&quot;</span>
+        }
+        if (
+<span class="fc bfc" id="L46" title="All 2 branches covered.">            supportedField(</span>
+<span class="fc" id="L47">                timeLimiter,</span>
+<span class="fc" id="L48">                &quot;timeLimiterAspectOrder&quot;,</span>
+<span class="fc" id="L49">                &quot;time-limiter-aspect-order&quot;,</span>
+<span class="fc" id="L50">                &quot;resilience4j.timelimiter&quot;,</span>
+            ) != null
+        ) {
+<span class="fc" id="L53">            customOrders += &quot;time-limiter aspect order&quot;</span>
+        }
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        val aspectOrder = if (customOrders.isEmpty()) {</span>
+<span class="fc" id="L56">            Resolution.Known(AspectOrder.DEFAULT_RETRY_WRAPS_TIME_LIMITER)</span>
+        } else {
+<span class="fc" id="L58">            Resolution.Unsupported(&quot;custom ${customOrders.joinToString(&quot; and &quot;)} is not supported&quot;)</span>
+        }
+
+<span class="fc" id="L61">        return ResolvedServiceConfiguration(</span>
+<span class="fc" id="L62">            serviceId = serviceId,</span>
+<span class="fc" id="L63">            source = path,</span>
+<span class="fc" id="L64">            retries = resolveRetries(retry, path),</span>
+<span class="fc" id="L65">            timeLimiters = resolveTimeLimiters(timeLimiter, path),</span>
+<span class="fc" id="L66">            aspectOrder = aspectOrder,</span>
+        )
+    }
+
+    private fun resolveRetries(section: JsonNode?, source: Path): Map&lt;String, ResolvedRetry&gt; {
+<span class="fc" id="L71">        val configs = objectField(section, &quot;configs&quot;, &quot;resilience4j.retry&quot;, required = false)</span>
+<span class="fc" id="L72">        val instances = objectField(section, &quot;instances&quot;, &quot;resilience4j.retry&quot;, required = false)</span>
+<span class="fc" id="L73">        val defaultNode = childObject(configs, &quot;default&quot;, &quot;resilience4j.retry.configs&quot;, required = false)</span>
+<span class="fc" id="L74">        val namedConfigs = namedObjects(configs, &quot;default&quot;, &quot;resilience4j.retry.configs&quot;)</span>
+
+<span class="fc" id="L76">        namedConfigs.keys.forEach { name -&gt;</span>
+<span class="fc" id="L77">            resolveRetryConfig(name, namedConfigs, defaultNode, source, emptyList())</span>
+<span class="fc" id="L78">        }</span>
+
+<span class="fc" id="L80">        return namedObjects(instances, null, &quot;resilience4j.retry.instances&quot;).mapValues { (name, node) -&gt;</span>
+<span class="fc" id="L81">            val baseName = textField(node, &quot;baseConfig&quot;, &quot;base-config&quot;, &quot;retry instance '$name'&quot;)</span>
+<span class="fc" id="L82">            val inherited = when (baseName) {</span>
+<span class="fc bfc" id="L83" title="All 4 branches covered.">                null, &quot;default&quot; -&gt; defaultRetry(defaultNode, source)</span>
+<span class="fc" id="L84">                else -&gt; resolveRetryConfig(baseName, namedConfigs, defaultNode, source, emptyList())</span>
+            }
+<span class="fc" id="L86">            applyRetryOverrides(inherited, node, &quot;retry instance '$name'&quot;, source).copy(name = name)</span>
+        }
+    }
+
+    private fun resolveRetryConfig(
+        name: String,
+        configs: Map&lt;String, JsonNode&gt;,
+        defaultNode: JsonNode?,
+        source: Path,
+        chain: List&lt;String&gt;,
+    ): ResolvedRetry {
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">        if (name == &quot;default&quot;) return defaultRetry(defaultNode, source)</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        if (name in chain) {</span>
+<span class="fc" id="L99">            throw ConfigurationException(</span>
+<span class="fc" id="L100">                &quot;retry baseConfig cycle in '$source': ${(chain + name).joinToString(&quot; -&gt; &quot;)}&quot;,</span>
+            )
+        }
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        if (chain.size &gt;= MAX_BASE_DEPTH) {</span>
+<span class="fc" id="L104">            throw ConfigurationException(&quot;retry baseConfig chain exceeds depth $MAX_BASE_DEPTH in '$source'&quot;)</span>
+        }
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        val node = configs[name]</span>
+<span class="fc" id="L107">            ?: throw ConfigurationException(&quot;unknown retry baseConfig '$name' in '$source'&quot;)</span>
+<span class="fc" id="L108">        val baseName = textField(node, &quot;baseConfig&quot;, &quot;base-config&quot;, &quot;retry config '$name'&quot;)</span>
+<span class="fc" id="L109">        val inherited = when (baseName) {</span>
+<span class="fc bfc" id="L110" title="All 4 branches covered.">            null, &quot;default&quot; -&gt; defaultRetry(defaultNode, source)</span>
+<span class="fc" id="L111">            else -&gt; resolveRetryConfig(baseName, configs, defaultNode, source, chain + name)</span>
+        }
+<span class="fc" id="L113">        return applyRetryOverrides(inherited, node, &quot;retry config '$name'&quot;, source)</span>
+    }
+
+    private fun defaultRetry(defaultNode: JsonNode?, source: Path): ResolvedRetry =
+<span class="fc" id="L117">        applyRetryOverrides(</span>
+<span class="fc" id="L118">            ResolvedRetry(</span>
+<span class="fc" id="L119">                name = null,</span>
+<span class="fc" id="L120">                maxAttempts = Resilience4jDefaults.RETRY_MAX_ATTEMPTS,</span>
+<span class="fc" id="L121">                fixedWait = Resolution.Known(Resilience4jDefaults.RETRY_WAIT_DURATION),</span>
+            ),
+<span class="fc" id="L123">            defaultNode,</span>
+<span class="fc" id="L124">            &quot;retry config 'default'&quot;,</span>
+<span class="fc" id="L125">            source,</span>
+<span class="fc" id="L126">        )</span>
+
+    private fun applyRetryOverrides(
+        inherited: ResolvedRetry,
+        node: JsonNode?,
+        context: String,
+        source: Path,
+    ): ResolvedRetry {
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        if (node == null) return inherited</span>
+<span class="fc" id="L135">        val maxAttemptsNode = supportedField(node, &quot;maxAttempts&quot;, &quot;max-attempts&quot;, context)</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        val maxAttempts = maxAttemptsNode?.let { positiveInt(it, &quot;maxAttempts&quot;, context, source) }</span>
+<span class="fc" id="L137">            ?: inherited.maxAttempts</span>
+<span class="fc" id="L138">        val waitNode = supportedField(node, &quot;waitDuration&quot;, &quot;wait-duration&quot;, context)</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        var fixedWait = if (inherited.fixedWait is Resolution.Unsupported) {</span>
+<span class="fc" id="L140">            inherited.fixedWait</span>
+        } else {
+<span class="fc bfc" id="L142" title="All 2 branches covered.">            waitNode?.let {</span>
+<span class="fc" id="L143">                val duration = duration(it, &quot;waitDuration&quot;, context, source)</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">                if (duration.isNegative) {</span>
+<span class="nc" id="L145">                    throw ConfigurationException(&quot;waitDuration must not be negative in $context at '$source'&quot;)</span>
+                }
+<span class="fc" id="L147">                Resolution.Known(duration)</span>
+<span class="fc" id="L148">            } ?: inherited.fixedWait</span>
+        }
+
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        unsupportedWaitReason(node, context)?.let { reason -&gt; fixedWait = Resolution.Unsupported(reason) }</span>
+<span class="fc" id="L152">        return inherited.copy(maxAttempts = maxAttempts, fixedWait = fixedWait)</span>
+    }
+
+    private fun resolveTimeLimiters(section: JsonNode?, source: Path): Map&lt;String, ResolvedTimeLimiter&gt; {
+<span class="fc" id="L156">        val configs = objectField(section, &quot;configs&quot;, &quot;resilience4j.timelimiter&quot;, required = false)</span>
+<span class="fc" id="L157">        val instances = objectField(section, &quot;instances&quot;, &quot;resilience4j.timelimiter&quot;, required = false)</span>
+<span class="fc" id="L158">        val defaultNode = childObject(configs, &quot;default&quot;, &quot;resilience4j.timelimiter.configs&quot;, required = false)</span>
+<span class="fc" id="L159">        val namedConfigs = namedObjects(configs, &quot;default&quot;, &quot;resilience4j.timelimiter.configs&quot;)</span>
+
+<span class="fc" id="L161">        namedConfigs.keys.forEach { name -&gt;</span>
+<span class="fc" id="L162">            resolveTimeLimiterConfig(name, namedConfigs, defaultNode, source, emptyList())</span>
+<span class="fc" id="L163">        }</span>
+
+<span class="fc" id="L165">        return namedObjects(instances, null, &quot;resilience4j.timelimiter.instances&quot;).mapValues { (name, node) -&gt;</span>
+<span class="fc" id="L166">            val baseName = textField(node, &quot;baseConfig&quot;, &quot;base-config&quot;, &quot;time-limiter instance '$name'&quot;)</span>
+<span class="fc" id="L167">            val inherited = when (baseName) {</span>
+<span class="fc bfc" id="L168" title="All 4 branches covered.">                null, &quot;default&quot; -&gt; defaultTimeLimiter(defaultNode, source)</span>
+<span class="fc" id="L169">                else -&gt; resolveTimeLimiterConfig(baseName, namedConfigs, defaultNode, source, emptyList())</span>
+            }
+<span class="fc" id="L171">            applyTimeLimiterOverrides(inherited, node, &quot;time-limiter instance '$name'&quot;, source).copy(name = name)</span>
+        }
+    }
+
+    private fun resolveTimeLimiterConfig(
+        name: String,
+        configs: Map&lt;String, JsonNode&gt;,
+        defaultNode: JsonNode?,
+        source: Path,
+        chain: List&lt;String&gt;,
+    ): ResolvedTimeLimiter {
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">        if (name == &quot;default&quot;) return defaultTimeLimiter(defaultNode, source)</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">        if (name in chain) {</span>
+<span class="nc" id="L184">            throw ConfigurationException(</span>
+<span class="nc" id="L185">                &quot;time-limiter baseConfig cycle in '$source': ${(chain + name).joinToString(&quot; -&gt; &quot;)}&quot;,</span>
+            )
+        }
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">        if (chain.size &gt;= MAX_BASE_DEPTH) {</span>
+<span class="nc" id="L189">            throw ConfigurationException(&quot;time-limiter baseConfig chain exceeds depth $MAX_BASE_DEPTH in '$source'&quot;)</span>
+        }
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">        val node = configs[name]</span>
+<span class="nc" id="L192">            ?: throw ConfigurationException(&quot;unknown time-limiter baseConfig '$name' in '$source'&quot;)</span>
+<span class="fc" id="L193">        val baseName = textField(node, &quot;baseConfig&quot;, &quot;base-config&quot;, &quot;time-limiter config '$name'&quot;)</span>
+<span class="fc" id="L194">        val inherited = when (baseName) {</span>
+<span class="pc bpc" id="L195" title="2 of 4 branches missed.">            null, &quot;default&quot; -&gt; defaultTimeLimiter(defaultNode, source)</span>
+<span class="nc" id="L196">            else -&gt; resolveTimeLimiterConfig(baseName, configs, defaultNode, source, chain + name)</span>
+        }
+<span class="fc" id="L198">        return applyTimeLimiterOverrides(inherited, node, &quot;time-limiter config '$name'&quot;, source)</span>
+    }
+
+    private fun defaultTimeLimiter(defaultNode: JsonNode?, source: Path): ResolvedTimeLimiter =
+<span class="fc" id="L202">        applyTimeLimiterOverrides(</span>
+<span class="fc" id="L203">            ResolvedTimeLimiter(</span>
+<span class="fc" id="L204">                name = &quot;default&quot;,</span>
+<span class="fc" id="L205">                timeout = Resolution.Known(Resilience4jDefaults.TIME_LIMITER_TIMEOUT_DURATION),</span>
+            ),
+<span class="fc" id="L207">            defaultNode,</span>
+<span class="fc" id="L208">            &quot;time-limiter config 'default'&quot;,</span>
+<span class="fc" id="L209">            source,</span>
+<span class="fc" id="L210">        )</span>
+
+    private fun applyTimeLimiterOverrides(
+        inherited: ResolvedTimeLimiter,
+        node: JsonNode?,
+        context: String,
+        source: Path,
+    ): ResolvedTimeLimiter {
+<span class="fc bfc" id="L218" title="All 2 branches covered.">        if (node == null) return inherited</span>
+<span class="fc" id="L219">        val timeoutNode = supportedField(node, &quot;timeoutDuration&quot;, &quot;timeout-duration&quot;, context)</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">        val timeout = timeoutNode?.let {</span>
+<span class="fc" id="L221">            val parsed = duration(it, &quot;timeoutDuration&quot;, context, source)</span>
+<span class="pc bpc" id="L222" title="2 of 4 branches missed.">            if (parsed.isZero || parsed.isNegative) {</span>
+<span class="nc" id="L223">                throw ConfigurationException(&quot;timeoutDuration must be positive in $context at '$source'&quot;)</span>
+            }
+<span class="fc" id="L225">            Resolution.Known(parsed)</span>
+<span class="fc" id="L226">        } ?: inherited.timeout</span>
+<span class="fc" id="L227">        return inherited.copy(timeout = timeout)</span>
+    }
+
+    private fun unsupportedWaitReason(node: JsonNode, context: String): String? {
+<span class="fc" id="L231">        val reasons = mutableListOf&lt;String&gt;()</span>
+<span class="fc" id="L232">        val exponential = supportedField(</span>
+<span class="fc" id="L233">            node,</span>
+<span class="fc" id="L234">            &quot;enableExponentialBackoff&quot;,</span>
+<span class="fc" id="L235">            &quot;enable-exponential-backoff&quot;,</span>
+<span class="fc" id="L236">            context,</span>
+        )
+<span class="pc bpc" id="L238" title="1 of 6 branches missed.">        if (exponential?.asBoolean(false) == true) reasons += &quot;exponential backoff&quot;</span>
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">        if (supportedField(node, &quot;exponentialBackoffMultiplier&quot;, &quot;exponential-backoff-multiplier&quot;, context) != null) {</span>
+<span class="nc" id="L240">            reasons += &quot;exponential backoff&quot;</span>
+        }
+<span class="fc" id="L242">        val randomized = supportedField(node, &quot;enableRandomizedWait&quot;, &quot;enable-randomized-wait&quot;, context)</span>
+<span class="pc bpc" id="L243" title="1 of 6 branches missed.">        if (randomized?.asBoolean(false) == true) reasons += &quot;randomized wait&quot;</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">        if (supportedField(node, &quot;randomizedWaitFactor&quot;, &quot;randomized-wait-factor&quot;, context) != null) {</span>
+<span class="nc" id="L245">            reasons += &quot;randomized wait&quot;</span>
+        }
+<span class="fc bfc" id="L247" title="All 2 branches covered.">        if (supportedField(node, &quot;intervalFunction&quot;, &quot;interval-function&quot;, context) != null) {</span>
+<span class="fc" id="L248">            reasons += &quot;intervalFunction&quot;</span>
+        }
+<span class="fc bfc" id="L250" title="All 2 branches covered.">        if (supportedField(node, &quot;intervalBiFunction&quot;, &quot;interval-bi-function&quot;, context) != null) {</span>
+<span class="fc" id="L251">            reasons += &quot;intervalBiFunction&quot;</span>
+        }
+<span class="fc bfc" id="L253" title="All 4 branches covered.">        return reasons.distinct().takeIf { it.isNotEmpty() }</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">            ?.joinToString(prefix = &quot;unsupported retry timing in $context: &quot;)</span>
+    }
+
+    private fun duration(node: JsonNode, field: String, context: String, source: Path): Duration {
+<span class="fc bfc" id="L258" title="All 2 branches covered.">        if (!node.isTextual) {</span>
+<span class="fc" id="L259">            throw ConfigurationException(&quot;$field must be a duration string in $context at '$source'&quot;)</span>
+        }
+<span class="fc" id="L261">        return try {</span>
+<span class="fc" id="L262">            DurationParser.parse(node.textValue())</span>
+<span class="fc" id="L263">        } catch (exception: ConfigurationException) {</span>
+<span class="fc" id="L264">            throw ConfigurationException(&quot;${exception.message} in $context at '$source'&quot;, exception)</span>
+        }
+    }
+
+    private fun positiveInt(node: JsonNode, field: String, context: String, source: Path): Int {
+<span class="pc bpc" id="L269" title="2 of 6 branches missed.">        if (!node.isIntegralNumber || !node.canConvertToInt() || node.intValue() &lt; 1) {</span>
+<span class="fc" id="L270">            throw ConfigurationException(&quot;$field must be a positive integer in $context at '$source'&quot;)</span>
+        }
+<span class="fc" id="L272">        return node.intValue()</span>
+    }
+
+    private fun textField(node: JsonNode, camel: String, kebab: String, context: String): String? {
+<span class="fc bfc" id="L276" title="All 2 branches covered.">        val value = supportedField(node, camel, kebab, context) ?: return null</span>
+<span class="pc bpc" id="L277" title="2 of 4 branches missed.">        if (!value.isTextual || value.textValue().isBlank()) {</span>
+<span class="nc" id="L278">            throw ConfigurationException(&quot;$camel must be a non-blank string in $context&quot;)</span>
+        }
+<span class="fc" id="L280">        return value.textValue()</span>
+    }
+
+    private fun supportedField(node: JsonNode?, camel: String, kebab: String, context: String): JsonNode? {
+<span class="fc bfc" id="L284" title="All 2 branches covered.">        if (node == null) return null</span>
+<span class="fc" id="L285">        val hasCamel = node.has(camel)</span>
+<span class="fc" id="L286">        val hasKebab = node.has(kebab)</span>
+<span class="fc bfc" id="L287" title="All 4 branches covered.">        if (hasCamel &amp;&amp; hasKebab) {</span>
+<span class="fc" id="L288">            throw ConfigurationException(&quot;$context declares both '$camel' and '$kebab'&quot;)</span>
+        }
+<span class="fc" id="L290">        return when {</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">            hasCamel -&gt; node.get(camel)</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">            hasKebab -&gt; node.get(kebab)</span>
+<span class="fc" id="L293">            else -&gt; null</span>
+        }
+    }
+
+    private fun objectField(node: JsonNode?, name: String, context: String, required: Boolean): JsonNode? {
+<span class="fc bfc" id="L298" title="All 4 branches covered.">        if (node == null || !node.has(name)) {</span>
+<span class="pc bpc" id="L299" title="1 of 2 branches missed.">            if (required) throw ConfigurationException(&quot;missing '$name' in $context&quot;)</span>
+<span class="fc" id="L300">            return null</span>
+        }
+<span class="fc" id="L302">        val value = node.get(name)</span>
+<span class="pc bpc" id="L303" title="1 of 2 branches missed.">        if (!value.isObject) throw ConfigurationException(&quot;'$name' must be an object in $context&quot;)</span>
+<span class="fc" id="L304">        return value</span>
+    }
+
+    private fun childObject(node: JsonNode?, name: String, context: String, required: Boolean): JsonNode? {
+<span class="fc bfc" id="L308" title="All 4 branches covered.">        if (node == null || !node.has(name)) {</span>
+<span class="pc bpc" id="L309" title="1 of 2 branches missed.">            if (required) throw ConfigurationException(&quot;missing '$name' in $context&quot;)</span>
+<span class="fc" id="L310">            return null</span>
+        }
+<span class="fc" id="L312">        val value = node.get(name)</span>
+<span class="pc bpc" id="L313" title="1 of 2 branches missed.">        if (!value.isObject) throw ConfigurationException(&quot;'$name' must be an object in $context&quot;)</span>
+<span class="fc" id="L314">        return value</span>
+    }
+
+    private fun namedObjects(node: JsonNode?, excluded: String?, context: String): Map&lt;String, JsonNode&gt; {
+<span class="fc bfc" id="L318" title="All 2 branches covered.">        if (node == null) return emptyMap()</span>
+<span class="fc" id="L319">        val result = linkedMapOf&lt;String, JsonNode&gt;()</span>
+<span class="fc" id="L320">        node.fields().forEach { (name, value) -&gt;</span>
+<span class="fc bfc" id="L321" title="All 2 branches covered.">            if (name != excluded) {</span>
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">                if (name.length &gt; InputLimits.MAX_IDENTIFIER_LENGTH) {</span>
+<span class="nc" id="L323">                    throw ConfigurationException(&quot;policy name in $context exceeds length limit ${InputLimits.MAX_IDENTIFIER_LENGTH}&quot;)</span>
+                }
+<span class="pc bpc" id="L325" title="1 of 2 branches missed.">                if (!value.isObject) throw ConfigurationException(&quot;'$name' must be an object in $context&quot;)</span>
+<span class="fc" id="L326">                result[name] = value</span>
+            }
+<span class="fc" id="L328">        }</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">        if (result.size &gt; InputLimits.MAX_NAMED_POLICIES_PER_SECTION) {</span>
+<span class="fc" id="L330">            throw ConfigurationException(</span>
+<span class="fc" id="L331">                &quot;$context contains ${result.size} policies; limit is ${InputLimits.MAX_NAMED_POLICIES_PER_SECTION}&quot;,</span>
+            )
+        }
+<span class="fc" id="L334">        return result</span>
+    }
+
+    private companion object {
+        const val MAX_BASE_DEPTH = InputLimits.MAX_BASE_CONFIG_DEPTH
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

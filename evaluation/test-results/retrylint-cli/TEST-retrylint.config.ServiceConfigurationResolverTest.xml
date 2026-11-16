@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="retrylint.config.ServiceConfigurationResolverTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-11-16T11:55:52.649Z" hostname="redacted" time="0.043">
+  <properties/>
+  <testcase name="unknown base configuration fails clearly()" classname="retrylint.config.ServiceConfigurationResolverTest" time="0.002"/>
+  <testcase name="named policy count is bounded()" classname="retrylint.config.ServiceConfigurationResolverTest" time="0.019"/>
+  <testcase name="uses supported Resilience4j defaults for instances()" classname="retrylint.config.ServiceConfigurationResolverTest" time="0.001"/>
+  <testcase name="non-positive attempts malformed values and duplicate aliases fail clearly()" classname="retrylint.config.ServiceConfigurationResolverTest" time="0.002"/>
+  <testcase name="named base chains and instance values merge using both key spellings()" classname="retrylint.config.ServiceConfigurationResolverTest" time="0.001"/>
+  <testcase name="maximum base depth resolves and excessive depth fails()" classname="retrylint.config.ServiceConfigurationResolverTest" time="0.003"/>
+  <testcase name="invalid configured duration fails clearly()" classname="retrylint.config.ServiceConfigurationResolverTest" time="0.002"/>
+  <testcase name="unsupported backoff remains explicit while attempts still resolve()" classname="retrylint.config.ServiceConfigurationResolverTest" time="0.005"/>
+  <testcase name="base configuration cycle fails with its chain()" classname="retrylint.config.ServiceConfigurationResolverTest" time="0.002"/>
+  <testcase name="randomized wait interval functions and custom aspect order are marked unsupported()" classname="retrylint.config.ServiceConfigurationResolverTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DurationParser.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">retrylint-cli</a> &gt; <a href="index.source.html" class="el_package">retrylint.config</a> &gt; <span class="el_source">DurationParser.kt</span></div><h1>DurationParser.kt</h1><pre class="source lang-java linenums">package retrylint.config
+
+import java.time.Duration
+import java.time.format.DateTimeParseException
+
+object DurationParser {
+<span class="fc" id="L7">    private val simpleDuration = Regex(&quot;^(\\d+)(ms|s|m)$&quot;)</span>
+
+    fun parse(value: String): Duration {
+<span class="fc" id="L10">        val text = value.trim()</span>
+<span class="fc" id="L11">        val match = simpleDuration.matchEntire(text)</span>
+<span class="fc bfc" id="L12" title="All 2 branches covered.">        if (match != null) {</span>
+<span class="fc" id="L13">            val amount = try {</span>
+<span class="fc" id="L14">                match.groupValues[1].toLong()</span>
+<span class="nc" id="L15">            } catch (exception: NumberFormatException) {</span>
+<span class="nc" id="L16">                throw ConfigurationException(&quot;invalid duration '$value'&quot;, exception)</span>
+            }
+<span class="pc bpc" id="L18" title="1 of 4 branches missed.">            return when (match.groupValues[2]) {</span>
+<span class="fc" id="L19">                &quot;ms&quot; -&gt; Duration.ofMillis(amount)</span>
+<span class="fc" id="L20">                &quot;s&quot; -&gt; Duration.ofSeconds(amount)</span>
+<span class="pc" id="L21">                &quot;m&quot; -&gt; Duration.ofMinutes(amount)</span>
+<span class="nc" id="L22">                else -&gt; error(&quot;unreachable duration unit&quot;)</span>
+            }
+        }
+
+<span class="fc" id="L26">        return try {</span>
+<span class="fc" id="L27">            Duration.parse(text)</span>
+<span class="fc" id="L28">        } catch (exception: DateTimeParseException) {</span>
+<span class="fc" id="L29">            throw ConfigurationException(</span>
+<span class="fc" id="L30">                &quot;invalid duration '$value'; expected formats such as 100ms, 2s, 1m, or ISO-8601&quot;,</span>
+<span class="fc" id="L31">                exception,</span>
+            )
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

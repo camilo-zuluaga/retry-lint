@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProjectConfigurationResolver.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">retrylint-cli</a> &gt; <a href="index.source.html" class="el_package">retrylint.config</a> &gt; <span class="el_source">ProjectConfigurationResolver.kt</span></div><h1>ProjectConfigurationResolver.kt</h1><pre class="source lang-java linenums">package retrylint.config
+
+import retrylint.graph.ValidatedTopology
+import retrylint.input.TopologyManifest
+import retrylint.model.Resolution
+import retrylint.model.ResolvedCallPolicies
+import retrylint.model.ResolvedProjectConfiguration
+import retrylint.model.ResolvedRetry
+import java.nio.file.Path
+import java.nio.file.Files
+import java.time.Duration
+
+<span class="fc" id="L13">class ProjectConfigurationResolver(</span>
+<span class="fc" id="L14">    private val serviceResolver: ServiceConfigurationResolver = ServiceConfigurationResolver(),</span>
+<span class="fc" id="L15">) {</span>
+    fun resolve(
+        manifestPath: Path,
+        manifest: TopologyManifest,
+        topology: ValidatedTopology,
+    ): ResolvedProjectConfiguration {
+<span class="fc" id="L21">        val normalizedManifest = manifestPath.toAbsolutePath().normalize()</span>
+<span class="pc bpc" id="L22" title="1 of 2 branches missed.">        if (Files.isSymbolicLink(normalizedManifest)) {</span>
+<span class="nc" id="L23">            throw ConfigurationException(&quot;manifest must not be a symbolic link: '$manifestPath'&quot;)</span>
+        }
+<span class="pc bpc" id="L25" title="1 of 2 branches missed.">        val manifestDirectory = normalizedManifest.parent</span>
+<span class="nc" id="L26">            ?: throw ConfigurationException(&quot;manifest path has no parent directory: '$manifestPath'&quot;)</span>
+
+<span class="fc" id="L28">        val services = manifest.services.associate { service -&gt;</span>
+<span class="fc" id="L29">            val requestedPath = manifestDirectory.resolve(service.config).normalize()</span>
+<span class="pc bpc" id="L30" title="1 of 2 branches missed.">            if (!requestedPath.startsWith(manifestDirectory)) {</span>
+<span class="nc" id="L31">                throw ConfigurationException(</span>
+<span class="nc" id="L32">                    &quot;service '${service.id}' configuration path escapes the manifest directory: '${service.config}'&quot;,</span>
+                )
+            }
+<span class="fc" id="L35">            val relativePath = manifestDirectory.relativize(requestedPath)</span>
+<span class="fc" id="L36">            var current = manifestDirectory</span>
+<span class="fc" id="L37">            relativePath.forEach { component -&gt;</span>
+<span class="fc" id="L38">                current = current.resolve(component)</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">                if (Files.isSymbolicLink(current)) {</span>
+<span class="fc" id="L40">                    throw ConfigurationException(</span>
+<span class="fc" id="L41">                        &quot;service '${service.id}' configuration path must not contain symbolic links: '${service.config}'&quot;,</span>
+                    )
+                }
+<span class="fc" id="L44">            }</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">            if (!Files.isRegularFile(requestedPath)) {</span>
+<span class="fc" id="L46">                throw ConfigurationException(</span>
+<span class="fc" id="L47">                    &quot;service '${service.id}' configuration must be a regular file inside the manifest directory: '${service.config}'&quot;,</span>
+                )
+            }
+<span class="fc" id="L50">            service.id to serviceResolver.resolve(service.id, requestedPath).copy(</span>
+<span class="fc" id="L51">                source = Path.of(service.config).normalize(),</span>
+<span class="fc" id="L52">            )</span>
+        }
+
+<span class="fc" id="L55">        val calls = manifest.calls.associate { call -&gt;</span>
+<span class="fc" id="L56">            val callerOperation = topology.operationsById.getValue(call.from)</span>
+<span class="fc" id="L57">            val callerService = services.getValue(callerOperation.service)</span>
+<span class="pc bpc" id="L58" title="1 of 4 branches missed.">            val retry = call.retry?.let { policyName -&gt;</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">                callerService.retries[policyName]</span>
+<span class="fc" id="L60">                    ?: throw ConfigurationException(</span>
+<span class="fc" id="L61">                        &quot;call '${call.id}' references unknown retry policy '$policyName' &quot; +</span>
+<span class="fc" id="L62">                            &quot;in caller service '${callerService.serviceId}' at '${callerService.source}'&quot;,</span>
+<span class="fc" id="L63">                    )</span>
+<span class="fc" id="L64">            } ?: ResolvedRetry(</span>
+<span class="fc" id="L65">                name = null,</span>
+<span class="fc" id="L66">                maxAttempts = 1,</span>
+<span class="fc" id="L67">                fixedWait = Resolution.Known(Duration.ZERO),</span>
+            )
+<span class="fc bfc" id="L69" title="All 2 branches covered.">            val timeLimiter = call.timeLimiter?.let { policyName -&gt;</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">                callerService.timeLimiters[policyName]</span>
+<span class="nc" id="L71">                    ?: throw ConfigurationException(</span>
+<span class="nc" id="L72">                        &quot;call '${call.id}' references unknown time-limiter policy '$policyName' &quot; +</span>
+<span class="nc" id="L73">                            &quot;in caller service '${callerService.serviceId}' at '${callerService.source}'&quot;,</span>
+<span class="fc" id="L74">                    )</span>
+            }
+
+<span class="fc" id="L77">            call.id to ResolvedCallPolicies(</span>
+<span class="fc" id="L78">                callId = call.id,</span>
+<span class="fc" id="L79">                callerServiceId = callerService.serviceId,</span>
+<span class="fc" id="L80">                configurationSource = callerService.source,</span>
+<span class="fc" id="L81">                retry = retry,</span>
+<span class="fc" id="L82">                timeLimiter = timeLimiter,</span>
+<span class="fc" id="L83">                aspectOrder = callerService.aspectOrder,</span>
+<span class="fc" id="L84">            )</span>
+        }
+
+<span class="fc" id="L87">        return ResolvedProjectConfiguration(services = services, calls = calls)</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

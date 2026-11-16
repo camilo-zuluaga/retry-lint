@@ -16,14 +16,6 @@ import kotlin.io.path.absolute
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
-/**
- * Contract between RetryLint's static resolver and the real Spring Boot + Resilience4j binding.
- *
- * Each scenario file is loaded twice: once by Spring Boot (resilience4j-spring-boot3), which builds the
- * real RetryRegistry/TimeLimiterRegistry, and once by RetryLint's ServiceConfigurationResolver. Every
- * retry and time-limiter instance resolved by RetryLint must have the same maxAttempts, fixed wait and
- * timeout as the registry built by the library. All mismatches are reported together.
- */
 class SpringIntegrationContractTest {
     @ParameterizedTest(name = "{0}")
     @ValueSource(
@@ -102,7 +94,6 @@ class SpringIntegrationContractTest {
         }
     }
 
-    /** Returns testbed-service/ regardless of whether Gradle runs from the module or the repository root. */
     private fun findModuleRoot(): Path {
         var current = Path.of(System.getProperty("user.dir")).absolute().normalize()
         while (!Files.isRegularFile(current.resolve("settings.gradle.kts"))) {

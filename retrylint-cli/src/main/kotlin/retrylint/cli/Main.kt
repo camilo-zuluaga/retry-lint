@@ -10,6 +10,7 @@ import retrylint.config.ConfigurationException
 import retrylint.analysis.AnalysisService
 import retrylint.analysis.RetryLintAnalyzer
 import retrylint.graph.TopologyValidationException
+import retrylint.input.LoadedRetryLintProject
 import retrylint.input.RetryLintProjectLoader
 import retrylint.input.FailureThreshold
 import retrylint.model.Severity
@@ -133,7 +134,9 @@ class VersionCommand : Callable<Int> {
 }
 
 @Command(name = "validate", description = ["Validate a RetryLint topology manifest."])
-class ValidateCommand : Callable<Int> {
+class ValidateCommand(
+    private val loadProject: (Path) -> LoadedRetryLintProject = { RetryLintProjectLoader().load(it) },
+) : Callable<Int> {
     @Parameters(index = "0", paramLabel = "retrylint.yml")
     lateinit var manifestPath: Path
 
@@ -142,7 +145,7 @@ class ValidateCommand : Callable<Int> {
 
     override fun call(): Int {
         return try {
-            val project = RetryLintProjectLoader().load(manifestPath)
+            val project = loadProject(manifestPath)
             spec.commandLine().out.println(
                 "VALID: ${project.manifest.name} " +
                     "(${project.topology.servicesById.size} services, " +
@@ -156,9 +159,12 @@ class ValidateCommand : Callable<Int> {
         } catch (exception: ConfigurationException) {
             spec.commandLine().err.println("INVALID_CONFIGURATION: ${exception.message}")
             2
-        } catch (exception: Exception) {
+        } catch (exception: IOException) {
             spec.commandLine().err.println("INVALID_INPUT: ${exception.message ?: exception::class.simpleName}")
             2
+        } catch (exception: Exception) {
+            spec.commandLine().err.println("INTERNAL_ERROR: ${exception.message ?: exception::class.simpleName}")
+            3
         }
     }
 }

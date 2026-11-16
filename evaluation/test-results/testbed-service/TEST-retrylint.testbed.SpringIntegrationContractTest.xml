@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="retrylint.testbed.SpringIntegrationContractTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-16T11:55:47.017Z" hostname="redacted" time="2.824">
+  <properties/>
+  <testcase name="contract/default-and-named-bases.yml" classname="retrylint.testbed.SpringIntegrationContractTest" time="0.522"/>
+  <testcase name="contract/named-chain-without-default.yml" classname="retrylint.testbed.SpringIntegrationContractTest" time="0.412"/>
+  <testcase name="contract/kebab-case-keys.yml" classname="retrylint.testbed.SpringIntegrationContractTest" time="0.368"/>
+  <testcase name="../../retrylint-cli/src/test/resources/fixtures/complete-example/services/checkout/application.yml" classname="retrylint.testbed.SpringIntegrationContractTest" time="0.332"/>
+  <testcase name="../../retrylint-cli/src/test/resources/fixtures/complete-example/services/orders/application.yml" classname="retrylint.testbed.SpringIntegrationContractTest" time="0.32"/>
+  <testcase name="../../retrylint-cli/src/test/resources/fixtures/complete-example/services/payments/application.yml" classname="retrylint.testbed.SpringIntegrationContractTest" time="0.294"/>
+  <testcase name="../../retrylint-cli/src/test/resources/fixtures/config-multilevel-base/application.yml" classname="retrylint.testbed.SpringIntegrationContractTest" time="0.285"/>
+  <testcase name="../../retrylint-cli/src/test/resources/fixtures/rl003-inherited-attempts/application.yml" classname="retrylint.testbed.SpringIntegrationContractTest" time="0.285"/>
+  <system-out><![CDATA[
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.0)
+
+2026-11-16T06:55:47.058-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : Starting GradleWorkerMain using Java 21.0.7 with PID 16794 (started by USER in REPO_ROOT/testbed-service)
+2026-11-16T06:55:47.058-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : No active profile set, falling back to 1 default profile: "default"
+2026-11-16T06:55:47.536-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : Started GradleWorkerMain in 0.502 seconds (process running for 4.419)
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.0)
+
+2026-11-16T06:55:47.562-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : Starting GradleWorkerMain using Java 21.0.7 with PID 16794 (started by USER in REPO_ROOT/testbed-service)
+2026-11-16T06:55:47.562-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : No active profile set, falling back to 1 default profile: "default"
+2026-11-16T06:55:47.950-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : Started GradleWorkerMain in 0.407 seconds (process running for 4.833)
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.0)
+
+2026-11-16T06:55:47.969-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : Starting GradleWorkerMain using Java 21.0.7 with PID 16794 (started by USER in REPO_ROOT/testbed-service)
+2026-11-16T06:55:47.969-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : No active profile set, falling back to 1 default profile: "default"
+2026-11-16T06:55:48.319-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : Started GradleWorkerMain in 0.364 seconds (process running for 5.202)
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.0)
+
+2026-11-16T06:55:48.343-05:00  INFO 16794 --- [checkout] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : Starting GradleWorkerMain using Java 21.0.7 with PID 16794 (started by USER in REPO_ROOT/testbed-service)
+2026-11-16T06:55:48.343-05:00  INFO 16794 --- [checkout] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : No active profile set, falling back to 1 default profile: "default"
+2026-11-16T06:55:48.653-05:00  INFO 16794 --- [checkout] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : Started GradleWorkerMain in 0.328 seconds (process running for 5.536)
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.0)
+
+2026-11-16T06:55:48.674-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : Starting GradleWorkerMain using Java 21.0.7 with PID 16794 (started by USER in REPO_ROOT/testbed-service)
+2026-11-16T06:55:48.674-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : No active profile set, falling back to 1 default profile: "default"
+2026-11-16T06:55:48.974-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : Started GradleWorkerMain in 0.317 seconds (process running for 5.857)
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.0)
+
+2026-11-16T06:55:48.991-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : Starting GradleWorkerMain using Java 21.0.7 with PID 16794 (started by USER in REPO_ROOT/testbed-service)
+2026-11-16T06:55:48.991-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : No active profile set, falling back to 1 default profile: "default"
+2026-11-16T06:55:49.269-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : Started GradleWorkerMain in 0.29 seconds (process running for 6.151)
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.0)
+
+2026-11-16T06:55:49.283-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : Starting GradleWorkerMain using Java 21.0.7 with PID 16794 (started by USER in REPO_ROOT/testbed-service)
+2026-11-16T06:55:49.283-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : No active profile set, falling back to 1 default profile: "default"
+2026-11-16T06:55:49.555-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : Started GradleWorkerMain in 0.281 seconds (process running for 6.437)
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.0)
+
+2026-11-16T06:55:49.567-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : Starting GradleWorkerMain using Java 21.0.7 with PID 16794 (started by USER in REPO_ROOT/testbed-service)
+2026-11-16T06:55:49.567-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : No active profile set, falling back to 1 default profile: "default"
+2026-11-16T06:55:49.840-05:00  INFO 16794 --- [retrylint-testbed-service] [    Test worker] w.o.g.p.i.worker.GradleWorkerMain        : Started GradleWorkerMain in 0.282 seconds (process running for 6.723)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

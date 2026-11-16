@@ -18,6 +18,8 @@ import java.util.Random
 import kotlin.io.path.createDirectories
 import kotlin.math.ceil
 
+private const val FROZEN_CORE_EXCLUSION = ":(exclude)retrylint-cli/src/main/kotlin/retrylint/cli"
+
 data class ScalabilityConfiguration(
     val graphSizes: List<Int> = listOf(10, 100, 500, 1_000),
     val generationSeeds: Map<Int, Long> = linkedMapOf(
@@ -411,7 +413,7 @@ class Week10ScalabilityRunner(
     )
 
     private fun verifyFrozenCore(repository: Path) {
-        val diff = ProcessBuilder("git", "diff", "--quiet", "v0.1.0", "--", "retrylint-cli/src/main")
+        val diff = ProcessBuilder("git", "diff", "--quiet", "v0.1.0", "--", "retrylint-cli/src/main", FROZEN_CORE_EXCLUSION)
             .directory(repository.toFile()).start()
         require(diff.waitFor() == 0) { "frozen analyzer core differs from v0.1.0; scalability evaluation aborted" }
         val untracked = git(repository, "ls-files", "--others", "--exclude-standard", "--", "retrylint-cli/src/main")

@@ -49,3 +49,18 @@ Historical Week 8–10 evidence is not replaced by final verification. The prima
 ## Release state
 
 The annotated local `v0.1.1` tag identifies this final delivery record. It is not pushed automatically. `v0.1.0` remains unchanged and continues to identify the evaluated analyzer core.
+
+## Post-release addendum (2026-11-16)
+
+The record above describes the `v0.1.1` tag and is kept unchanged. Later work on `main` changed the following:
+
+| Item | State after `v0.1.1` |
+|---|---|
+| `validate` exit code | Corrected to return `3` (`INTERNAL_ERROR`) on unexpected internal failures, matching the contract; only `retrylint/cli/Main.kt` changed |
+| Frozen-core check | `git diff v0.1.0 -- retrylint-cli/src/main ':(exclude)retrylint-cli/src/main/kotlin/retrylint/cli'` produces no output |
+| Project tests | PASS on Linux with Java 21: 116 total, 0 failed, 0 skipped |
+| Branch coverage | 82.5% on `config`, `graph`, and `rules` (gate: 80%); archived in `evaluation/coverage/retrylint-cli` |
+| Test results | JUnit XML archived in `evaluation/test-results`; host name, user name, and local paths are redacted |
+| Distribution | `retrylint-cli-0.1.0.zip` rebuilt from the current source, 7,584,292 bytes; SHA-256 in [`SHA256SUMS.txt`](SHA256SUMS.txt) |
+| Week 8 | Not re-run. `verify-week8.ps1` now records scenarios 1, 3, 9 and bank-third-success, but the checked-in `week8-results.json` predates that change |
+| Week 9 | PASS: 40 executed, 0 skipped, TP=30, FP=0, FN=0 |

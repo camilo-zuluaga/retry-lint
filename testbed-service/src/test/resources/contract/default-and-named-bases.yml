@@ -1,4 +1,3 @@
-# Contract scenario: configs.default plus named bases with and without an explicit baseConfig.
 resilience4j:
   retry:
     configs:

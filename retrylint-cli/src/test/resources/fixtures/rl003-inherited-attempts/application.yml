@@ -1,5 +1,3 @@
-# Attempt counts reach RL003 only through inheritance:
-# inherits-default = 4 (configs.default), from-single = 1, explicit-two = 2.
 resilience4j:
   retry:
     configs:

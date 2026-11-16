@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="retrylint.rules.RetryWindowCalculatorTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-16T11:55:53.302Z" hostname="redacted" time="0.001">
+  <properties/>
+  <testcase name="one attempt has no retry wait()" classname="retrylint.rules.RetryWindowCalculatorTest" time="0.0"/>
+  <testcase name="three attempts with four hundred millisecond timeouts and fifty millisecond waits is thirteen hundred()" classname="retrylint.rules.RetryWindowCalculatorTest" time="0.0"/>
+  <testcase name="invalid arithmetic inputs are rejected before calculation()" classname="retrylint.rules.RetryWindowCalculatorTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

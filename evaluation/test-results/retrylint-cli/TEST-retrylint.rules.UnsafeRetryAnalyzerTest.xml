@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="retrylint.rules.UnsafeRetryAnalyzerTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-16T11:55:53.381Z" hostname="redacted" time="0.012">
+  <properties/>
+  <testcase name="decision table reports only unknown and non-idempotent repeated targets()" classname="retrylint.rules.UnsafeRetryAnalyzerTest" time="0.004"/>
+  <testcase name="unsupported timeout timing does not prevent unsafe retry analysis()" classname="retrylint.rules.UnsafeRetryAnalyzerTest" time="0.004"/>
+  <testcase name="unsafe retry finding says operation may be repeated and includes evidence()" classname="retrylint.rules.UnsafeRetryAnalyzerTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
